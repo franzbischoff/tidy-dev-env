@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1
-
 FROM docker/dev-environments-default:stable-1 AS base
 
 # RUN useradd -s /bin/bash -m vscode \
@@ -316,28 +314,28 @@ USER root
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ENV DEBIAN_FRONTEND noninteractive
 
-# Magic DNS in a container where /etc/resolv.conf is a bind mount needed
-# extra support, currently on a development branch.
-RUN mkdir -p /home/tailscale /var/run/tailscale /var/cache/tailscale /var/lib/tailscale
+# # Magic DNS in a container where /etc/resolv.conf is a bind mount needed
+# # extra support, currently on a development branch.
+# RUN mkdir -p /home/tailscale /var/run/tailscale /var/cache/tailscale /var/lib/tailscale
 
-WORKDIR /home/tailscale
+# WORKDIR /home/tailscale
 
-COPY tailscaled /etc/init.d
+# COPY tailscaled /etc/init.d
 
-RUN chmod 755 /etc/init.d/tailscaled \
-  && git clone --depth 1 https://github.com/tailscale/tailscale.git
+# RUN chmod 755 /etc/init.d/tailscaled \
+#   && git clone --depth 1 https://github.com/tailscale/tailscale.git
 
-WORKDIR /home/tailscale/tailscale
+# WORKDIR /home/tailscale/tailscale
 
-ENV GOPATH "${HOME_USER}/go"
-ENV PATH ${GOPATH}/bin:${PATH}
+# ENV GOPATH "${HOME_USER}/go"
+# ENV PATH ${GOPATH}/bin:${PATH}
 
-RUN go mod download \
-  && go install -mod=readonly ./cmd/tailscaled ./cmd/tailscale
+# RUN go mod download \
+#   && go install -mod=readonly ./cmd/tailscaled ./cmd/tailscale
 
-RUN mv ${GOPATH}/bin/tailscaled /usr/sbin/tailscaled \
-  && mv ${GOPATH}/bin/tailscale /usr/bin/tailscale \
-  && rm -rf /home/tailscale
+# RUN mv ${GOPATH}/bin/tailscaled /usr/sbin/tailscaled \
+#   && mv ${GOPATH}/bin/tailscale /usr/bin/tailscale \
+#   && rm -rf /home/tailscale
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   iptables \
@@ -364,7 +362,7 @@ ENV NOT_CRAN="true" \
 
 # ************************* after-middle start **********************
 
-FROM branch-${flavor} AS after-branch
+FROM branch-vscode AS after-branch
 
 RUN echo "done"
 

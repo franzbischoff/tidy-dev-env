@@ -3,7 +3,8 @@ services:
   develop:
     build:
       context: develop
-      target: development
+      args:
+        - R_VERSION=4.2.0
       dockerfile: Dockerfile.devenv
     container_name: tidymodels-dev
     volumes:
@@ -15,7 +16,6 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Lisbon
-      - R_VERSION=4.2.0
     restart: unless-stopped
     secrets:
       - db-password
