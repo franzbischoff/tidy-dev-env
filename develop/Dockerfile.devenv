@@ -31,7 +31,15 @@ WORKDIR /home/
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# ## Use Debian bookworm via pinning -- new style via APT::Default-Release
+# RUN echo "deb http://http.debian.net/debian bookworm main" > /etc/apt/sources.list.d/debian-testing.list \
+#         && echo 'APT::Default-Release "testing";' > /etc/apt/apt.conf.d/default \
+#         && echo 'APT::Install-Recommends "false";' > /etc/apt/apt.conf.d/90local-no-recommends
+
+RUN echo "deb http://cloud.r-project.org/bin/linux/debian buster-cran40/" >> /etc/apt/sources.list \
+  && apt-key adv --keyserver keyserver.ubuntu.com --recv-key '95C0FAF38DB3CCAD0C080A7BDC78B2DDEABC47B7' \
+  && echo 'APT::Install-Recommends "false";' > /etc/apt/apt.conf.d/90local-no-recommends \
+  && apt-get update && apt-get install -y --no-install-recommends \
   git \
   ca-certificates \
   wget \
@@ -50,7 +58,7 @@ RUN chmod g+rw /home && \
 
 # adding rocker layer
 LABEL org.opencontainers.image.licenses="GPL-2.0-or-later" \
-  org.opencontainers.image.source="https://github.com/rocker-org/r-ubuntu" \
+  org.opencontainers.image.source="https://github.com/rocker-org/r-base" \
   org.opencontainers.image.vendor="Rocker Project" \
   org.opencontainers.image.authors="Dirk Eddelbuettel <edd@debian.org>"
 
@@ -68,11 +76,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   fonts-texgyre \
   && rm -rf /var/lib/apt/lists/*
 
-RUN curl -sL -o- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc \
-  && add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/" \
-  && add-apt-repository ppa:c2d4u.team/c2d4u4.0+ \
-  && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
-
 ## Configure default locale, see https://github.com/rocker-org/rocker/issues/19
 RUN echo "C.UTF-8 en_US.UTF-8 UTF-8" >> /etc/locale.gen \
   && locale-gen en_US.utf8 \
@@ -86,6 +89,27 @@ ENV TZ Europe/Lisbon
 # ## During the freeze, new (source) packages are in experimental and we place the binaries in our PPA
 # RUN echo "deb http://deb.debian.org/debian experimental main" > /etc/apt/sources.list.d/experimental.list \
 #   && echo "deb [trusted=yes] https://eddelbuettel.github.io/ppaR400 ./" > /etc/apt/sources.list.d/edd-r4.list
+
+# Install some dev stuffs
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  build-essential \
+  protobuf-compiler \
+  libprotobuf-dev \
+  libprotoc-dev \
+  libgit2-dev \
+  procps \
+  htop \
+  gnupg \
+  expect \
+  graphviz \
+  ripgrep \
+  pinentry-tty \
+  net-tools \
+  jq \
+  # zsh \
+  # zsh-autosuggestions \
+  # zsh-syntax-highlighting \
+  && rm -rf /var/lib/apt/lists/*
 
 # Install aditional tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -112,9 +136,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Now install R and littler, and create a link for littler in /usr/local/bin
 # Default CRAN repo is now set by R itself, and littler knows about it too
 # r-cran-docopt is not currently in c2d4u so we install from source
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update \
+  && apt-get install -t buster-cran40 \
+  && apt-get install -y --no-install-recommends \
   littler \
-  apt-transport-https \
   r-cran-littler \
   r-base=${R_BASE_VERSION}-* \
   r-base-dev=${R_BASE_VERSION}-* \
@@ -126,9 +151,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && ln -s /usr/lib/R/site-library/littler/examples/installDeps.r /usr/local/bin/installDeps.r \
   && ln -s /usr/lib/R/site-library/littler/examples/installGithub.r /usr/local/bin/installGithub.r \
   && ln -s /usr/lib/R/site-library/littler/examples/testInstalled.r /usr/local/bin/testInstalled.r \
-  && install.r docopt \
+  && install.r docopt formatr ggplot2 knitr rmarkdown runit testthat \
   && rm -rf /tmp/downloaded_packages/ /tmp/*.rds \
   && rm -rf /var/lib/apt/lists/*
+
+# Install tidy stuff
+RUN install.r tidyverse bitops sourcetools xtable checkmate plotly bookdown future stringi \
+  shiny openssl remotes devtools pkgbuild roxygen2 zoo codetools lattice mass matrix mgcv \
+  nlme targets tarchetypes jsonlite rlang clustermq workflowr R.matlab visNetwork \
+  bookdown lubridate kableExtra renv thesisdown here Rcpp RcppParallel matrixprofiler \
+  RcppProgress RcppThread codetools signal e1071 lattice MASS Matrix mgcv nlme proffer languageserver
 
 # Install rmd tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -136,12 +168,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   lmodern \
   pandoc-citeproc \
   qpdf \
-  r-cran-formatr \
-  r-cran-ggplot2 \
-  r-cran-knitr \
-  r-cran-rmarkdown \
-  r-cran-runit \
-  r-cran-testthat \
   texinfo \
   texlive-fonts-extra \
   texlive-fonts-recommended \
@@ -161,53 +187,6 @@ RUN curl -sSL -o pandoc.deb https://github.com/jgm/pandoc/releases/download/2.17
   && dpkg -i pandoc.deb \
   && rm pandoc.deb
 
-# Install tidy stuff
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  r-cran-tidyverse \
-  r-cran-bitops \
-  r-cran-sourcetools \
-  r-cran-xtable \
-  r-cran-checkmate \
-  r-cran-plotly \
-  r-cran-bookdown \
-  r-cran-future \
-  r-cran-stringi \
-  r-cran-shiny \
-  r-cran-openssl \
-  r-cran-remotes \
-  r-cran-devtools \
-  r-cran-pkgbuild \
-  r-cran-roxygen2 \
-  r-cran-zoo \
-  r-cran-codetools \
-  r-cran-lattice \
-  r-cran-mass \
-  r-cran-matrix \
-  r-cran-mgcv \
-  r-cran-nlme \
-  && rm -rf /var/lib/apt/lists/*
-
-# Install some dev stuffs
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  build-essential \
-  protobuf-compiler \
-  libprotobuf-dev \
-  libprotoc-dev \
-  libgit2-dev \
-  procps \
-  htop \
-  gnupg \
-  expect \
-  graphviz \
-  ripgrep \
-  pinentry-tty \
-  net-tools \
-  jq \
-  # zsh \
-  # zsh-autosuggestions \
-  # zsh-syntax-highlighting \
-  && rm -rf /var/lib/apt/lists/*
-
 # Install go + protobuf
 RUN curl -sL -o ${HOME_USER}/gobuf.tar.gz https://go.dev/dl/go1.17.7.linux-amd64.tar.gz \
   && tar -xf ${HOME_USER}/gobuf.tar.gz -C ${HOME_USER} \
@@ -217,16 +196,8 @@ RUN curl -sL -o ${HOME_USER}/gobuf.tar.gz https://go.dev/dl/go1.17.7.linux-amd64
 RUN curl -sL -o /usr/bin/hadolint https://github.com/hadolint/hadolint/releases/download/v2.8.0/hadolint-Linux-x86_64 \
   && chmod 755 /usr/bin/hadolint
 
-# Install other packages
-RUN install.r targets tarchetypes jsonlite rlang \
-  clustermq workflowr R.matlab visNetwork \
-  bookdown lubridate kableExtra renv \
-  thesisdown here Rcpp RcppParallel matrixprofiler \
-  RcppProgress RcppThread codetools signal e1071 \
-  lattice MASS Matrix mgcv nlme proffer languageserver
-
 # install dotnet
-RUN curl -sSL -o ${HOME_USER}/packages-microsoft-prod.deb "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb" \
+RUN curl -sSL -o ${HOME_USER}/packages-microsoft-prod.deb "https://packages.microsoft.com/config/debian/$(lsb_release -rs)/packages-microsoft-prod.deb" \
   && dpkg -i ${HOME_USER}/packages-microsoft-prod.deb \
   && rm ${HOME_USER}/packages-microsoft-prod.deb
 
