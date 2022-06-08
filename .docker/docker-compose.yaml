@@ -6,6 +6,7 @@ services:
       args:
         - R_VERSION=4.2.0
       dockerfile: Dockerfile.devenv
+    command: /bin/sh -c "while sleep 1000; do :; done"
     container_name: tidymodels-dev
     volumes:
       - user-data:/home/vscode
