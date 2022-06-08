@@ -9,8 +9,8 @@ services:
     command: /bin/sh -c "while sleep 1000; do :; done"
     container_name: tidymodels-dev
     volumes:
-      - user-data:/workspace
-      - /workspace/tidymodels:/com.docker.devenvironments.code
+      # - user-data:/workspace
+      - \\wsl.localhost\Ubuntu-20.04\workspace\tidymodels:/workspace
       # - /home/franz/.gnupg:/home/vscode/.gnupg:cached
       # - /var/run/docker.sock:/var/run/docker.sock:consistent
     environment:
