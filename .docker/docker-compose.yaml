@@ -9,7 +9,7 @@ services:
     command: /bin/sh -c "while sleep 1000; do :; done"
     container_name: tidymodels-dev
     volumes:
-      - user-data:/home/vscode
+      # - user-data:/home/vscode
       - /workspace/tidymodels:/workspace:consistent
       # - /home/franz/.gnupg:/home/vscode/.gnupg:cached
       # - /var/run/docker.sock:/var/run/docker.sock:consistent
@@ -17,15 +17,15 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Lisbon
-    restart: unless-stopped
-    secrets:
-      - db-password
+    # restart: unless-stopped
+    # secrets:
+    #   - db-password
     # expose:
     #   - 3306
     # ports:
     #   - 8080:80
 volumes:
   user-data:
-secrets:
-  db-password:
-    file: develop/password.txt
+# secrets:
+#   db-password:
+#     file: develop/password.txt
