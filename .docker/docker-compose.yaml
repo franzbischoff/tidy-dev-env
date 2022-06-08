@@ -1,0 +1,30 @@
+version: "3.9"
+services:
+  develop:
+    build:
+      context: develop
+      target: development
+      dockerfile: Dockerfile.devenv
+    container_name: tidymodels-dev
+    volumes:
+      - user-data:/home/vscode
+      - /workspace/tidymodels:/workspace:consistent
+      - /home/franz/.gnupg:/home/vscode/.gnupg:cached
+      - /var/run/docker.sock:/var/run/docker.sock:consistent
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Lisbon
+      - R_VERSION=4.2.0
+    restart: unless-stopped
+    secrets:
+      - db-password
+    # expose:
+    #   - 3306
+    # ports:
+    #   - 8080:80
+volumes:
+  user-data:
+secrets:
+  db-password:
+    file: develop/password.txt
